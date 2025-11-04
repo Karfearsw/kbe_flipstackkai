@@ -1,4 +1,5 @@
-import { Switch, Route } from "wouter";
+import * as React from "react";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -26,6 +27,8 @@ import DocumentationPage from "@/pages/documentation-page";
 import InvestorPage from "@/pages/investor-page";
 import ErrorGuidancePage from "@/pages/error-guidance-page";
 import ErrorExamplePage from "@/pages/error-example-page";
+import StatusPage from "@/pages/status-page";
+import NotesPage from "@/pages/notes";
 
 // Wrapper component for protected routes with layout
 const ProtectedPageWithLayout = ({ component: Component }: { component: React.ComponentType }) => {
@@ -51,6 +54,8 @@ function Router() {
       <ProtectedRoute path="/calculator" component={() => <ProtectedPageWithLayout component={CalculatorPage} />} />
       <ProtectedRoute path="/timesheet" component={() => <ProtectedPageWithLayout component={TimesheetPage} />} />
       <ProtectedRoute path="/activities" component={() => <ProtectedPageWithLayout component={ActivitiesPage} />} />
+      <ProtectedRoute path="/status" component={() => <ProtectedPageWithLayout component={StatusPage} />} />
+      <ProtectedRoute path="/notes" component={() => <ProtectedPageWithLayout component={NotesPage} />} />
       <ProtectedRoute path="/documentation" component={() => <ProtectedPageWithLayout component={DocumentationPage} />} />
       <ProtectedRoute path="/error-guidance" component={() => <ProtectedPageWithLayout component={ErrorGuidancePage} />} />
       <ProtectedRoute path="/error-examples" component={() => <ProtectedPageWithLayout component={ErrorExamplePage} />} />
@@ -58,6 +63,40 @@ function Router() {
       <Route component={NotFound} />
     </Switch>
   );
+}
+
+// Minimal global activity tracker for feature usage & user activity
+function ActivityTracker() {
+  const [location] = useLocation();
+  React.useEffect(() => {
+    try {
+      const key = "featureUsage";
+      const raw = localStorage.getItem(key);
+      const usage = raw ? JSON.parse(raw) : {};
+      usage[location] = (usage[location] || 0) + 1;
+      localStorage.setItem(key, JSON.stringify(usage));
+
+      const activityKey = "userActivityEvents";
+      const count = Number(localStorage.getItem(activityKey) || "0");
+      localStorage.setItem(activityKey, String(count + 1));
+    } catch (e) {
+      // ignore storage errors
+    }
+  }, [location]);
+
+  React.useEffect(() => {
+    const start = Date.now();
+    const interval = setInterval(() => {
+      const elapsedKey = "sessionDurationMs";
+      const elapsed = Date.now() - start;
+      try {
+        localStorage.setItem(elapsedKey, String(elapsed));
+      } catch {}
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return null;
 }
 
 function App() {
@@ -70,6 +109,7 @@ function App() {
               <TooltipProvider>
                 <ErrorBoundary>
                   <Toaster />
+                  <ActivityTracker />
                   <Router />
                 </ErrorBoundary>
               </TooltipProvider>

@@ -1,8 +1,13 @@
+import "./env";
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+// Enable CORS so the frontend on Vercel can call this API when deployed
+const allowedOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:5173").split(",");
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -59,7 +64,8 @@ app.use((req, res, next) => {
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = 5000;
+  // Use dynamic PORT for cloud providers; default to 5000 locally
+  const port = parseInt(process.env.PORT || "5000", 10);
   const listenOptions: any = {
     port,
     host: "0.0.0.0",

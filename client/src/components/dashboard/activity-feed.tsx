@@ -10,7 +10,8 @@ import {
   TimerIcon,
   RefreshCwIcon
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Activity, User, Lead } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -128,6 +129,7 @@ interface ActivityWithUser extends Activity {
 
 export function ActivityFeed() {
   const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
   
   // Fetch recent activities
   const { data: activities = [], isLoading: isLoadingActivities } = useQuery<Activity[]>({
@@ -179,6 +181,34 @@ export function ActivityFeed() {
     const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
     return dateB.getTime() - dateA.getTime();
   });
+
+  // Realtime subscription for activities
+  // On inserts/updates, invalidate the activities query to refresh
+  // (Alternatively, push into local cache for smoother UX)
+  useEffect(() => {
+    if (!supabase) return;
+    const channel = supabase
+      .channel("public:activities")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "activities" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["/api/activities"] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "activities" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["/api/activities"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
   
   // Function to handle clicking on activity
   const handleActivityClick = (activity: ActivityWithUser) => {
@@ -273,3 +303,4 @@ export function ActivityFeed() {
     </Card>
   );
 }
+import { supabase } from "@/lib/supabase";

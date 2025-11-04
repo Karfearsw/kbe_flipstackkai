@@ -1,4 +1,111 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { supabase } from "./supabase";
+
+// Map DB snake_case rows to app camelCase shapes
+function mapLeadRow(row: any) {
+  if (!row) return row;
+  return {
+    id: row.id,
+    leadId: row.lead_id,
+    propertyAddress: row.property_address,
+    city: row.city,
+    state: row.state,
+    zip: row.zip,
+    ownerName: row.owner_name,
+    ownerPhone: row.owner_phone,
+    ownerEmail: row.owner_email,
+    status: row.status,
+    motivationLevel: row.motivation_level,
+    propertyType: row.property_type,
+    source: row.lead_source,
+    notes: row.notes,
+    arv: row.arv,
+    repairCost: row.repair_cost,
+    estimatedValue: row.estimated_value,
+    assignedToUserId: row.assigned_to_user_id,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapUserRow(row: any) {
+  if (!row) return row;
+  return {
+    id: row.id,
+    username: row.username,
+    email: row.email,
+    password: row.password,
+    name: row.name,
+    role: row.role,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapActivityRow(row: any) {
+  if (!row) return row;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    actionType: row.action_type,
+    targetType: row.target_type,
+    targetId: row.target_id,
+    description: row.description,
+    createdAt: row.created_at,
+  };
+}
+
+function mapCallRow(row: any) {
+  if (!row) return row;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    leadId: row.lead_id,
+    callTime: row.call_timestamp,
+    duration: row.duration_seconds,
+    outcome: row.outcome,
+    notes: row.notes,
+    createdAt: row.created_at,
+  };
+}
+
+function mapScheduledCallRow(row: any) {
+  if (!row) return row;
+  return {
+    id: row.id,
+    assignedCallerId: row.assigned_caller_id,
+    leadId: row.lead_id,
+    scheduledTime: row.scheduled_time,
+    notes: row.notes,
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function buildLeadFilters(query: any) {
+  let q = supabase!.from("leads").select("*");
+  if (query?.status && Array.isArray(query.status) && query.status.length) {
+    q = q.in("status", query.status);
+  }
+  if (query?.search && typeof query.search === "string" && query.search.trim()) {
+    const s = query.search.trim();
+    // Search owner_name, property_address, city, state
+    q = q.or(
+      `owner_name.ilike.%${s}%,property_address.ilike.%${s}%,city.ilike.%${s}%,state.ilike.%${s}%`
+    );
+  }
+  if (query?.assignedToUserId !== undefined && query.assignedToUserId !== null) {
+    q = q.eq("assigned_to_user_id", query.assignedToUserId);
+  }
+  // Sorting
+  const sortBy = query?.sortBy === "updatedAt" ? "updated_at" : "created_at";
+  const ascending = query?.sortOrder === "asc";
+  q = q.order(sortBy, { ascending });
+  return q;
+}
 
 // We need to declare the useErrorGuidance hook here, but not import it directly
 // to avoid circular dependencies, as it's imported in components that use this file
@@ -80,6 +187,122 @@ export async function apiRequest(
     timeout?: number;
   }
 ): Promise<Response> {
+  // If Supabase is configured, route certain /api/* operations to Supabase directly
+  if (supabase && url.startsWith("/api/")) {
+    try {
+      // Leads
+      if (method === "POST" && url === "/api/leads") {
+        const body = (data || {}) as any;
+        const leadId = body.leadId || `LD-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, "0")}`;
+        const insert = {
+          lead_id: leadId,
+          property_address: body.propertyAddress,
+          city: body.city,
+          state: body.state,
+          zip: body.zip,
+          owner_name: body.ownerName,
+          owner_phone: body.ownerPhone,
+          owner_email: body.ownerEmail,
+          status: body.status,
+          motivation_level: body.motivationLevel,
+          property_type: body.propertyType,
+          lead_source: body.source,
+          notes: body.notes,
+          arv: body.arv,
+          repair_cost: body.repairCost,
+          estimated_value: body.estimatedValue,
+          latitude: body.latitude,
+          longitude: body.longitude,
+          assigned_to_user_id: body.assignedToUserId,
+        };
+        const { data: rows, error } = await supabase.from("leads").insert(insert).select("*").limit(1);
+        if (error) {
+          return new Response(error.message, { status: 400 });
+        }
+        const mapped = rows?.[0] ? mapLeadRow(rows[0]) : null;
+        return new Response(JSON.stringify(mapped), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      if (method === "PUT" && url.startsWith("/api/leads/")) {
+        const id = Number(url.split("/").pop());
+        const body = (data || {}) as any;
+        const update: any = {};
+        if (body.propertyAddress !== undefined) update.property_address = body.propertyAddress;
+        if (body.city !== undefined) update.city = body.city;
+        if (body.state !== undefined) update.state = body.state;
+        if (body.zip !== undefined) update.zip = body.zip;
+        if (body.ownerName !== undefined) update.owner_name = body.ownerName;
+        if (body.ownerPhone !== undefined) update.owner_phone = body.ownerPhone;
+        if (body.ownerEmail !== undefined) update.owner_email = body.ownerEmail;
+        if (body.status !== undefined) update.status = body.status;
+        if (body.motivationLevel !== undefined) update.motivation_level = body.motivationLevel;
+        if (body.propertyType !== undefined) update.property_type = body.propertyType;
+        if (body.source !== undefined) update.lead_source = body.source;
+        if (body.notes !== undefined) update.notes = body.notes;
+        if (body.arv !== undefined) update.arv = body.arv;
+        if (body.repairCost !== undefined) update.repair_cost = body.repairCost;
+        if (body.estimatedValue !== undefined) update.estimated_value = body.estimatedValue;
+        if (body.latitude !== undefined) update.latitude = body.latitude;
+        if (body.longitude !== undefined) update.longitude = body.longitude;
+        if (body.assignedToUserId !== undefined) update.assigned_to_user_id = body.assignedToUserId;
+        const { data: rows, error } = await supabase.from("leads").update(update).eq("id", id).select("*").limit(1);
+        if (error) {
+          return new Response(error.message, { status: 400 });
+        }
+        const mapped = rows?.[0] ? mapLeadRow(rows[0]) : null;
+        return new Response(JSON.stringify(mapped), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+
+      // Scheduled calls
+      if (method === "POST" && url === "/api/scheduled-calls") {
+        const body = (data || {}) as any;
+        const insert = {
+          lead_id: body.leadId,
+          assigned_caller_id: body.assignedCallerId,
+          scheduled_time: body.scheduledTime,
+          status: body.status,
+          notes: body.notes,
+        };
+        const { data: rows, error } = await supabase.from("scheduled_calls").insert(insert).select("*").limit(1);
+        if (error) {
+          return new Response(error.message, { status: 400 });
+        }
+        const mapped = rows?.[0] ? mapScheduledCallRow(rows[0]) : null;
+        return new Response(JSON.stringify(mapped), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+
+      // Calls
+      if (method === "POST" && url === "/api/calls") {
+        const body = (data || {}) as any;
+        const insert = {
+          user_id: body.userId,
+          lead_id: body.leadId,
+          call_timestamp: body.callTime,
+          duration_seconds: body.duration,
+          outcome: body.outcome,
+          notes: body.notes,
+        };
+        const { data: rows, error } = await supabase.from("calls").insert(insert).select("*").limit(1);
+        if (error) {
+          return new Response(error.message, { status: 400 });
+        }
+        const mapped = rows?.[0] ? mapCallRow(rows[0]) : null;
+        return new Response(JSON.stringify(mapped), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+    } catch (e: any) {
+      const message = e?.message || "Supabase request failed";
+      return new Response(message, { status: 500 });
+    }
+    // Fallback to network for other endpoints (e.g., auth, Twilio)
+  }
+
+  // Build absolute URL if a base is provided, otherwise use relative (same origin)
+  function buildUrl(input: string) {
+    const isAbsolute = /^https?:\/\//i.test(input);
+    if (isAbsolute) return input;
+    const base = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") || "";
+    return base ? `${base}${input}` : input;
+  }
+
   // Create an AbortController to handle timeout
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
@@ -87,7 +310,8 @@ export async function apiRequest(
   }, options?.timeout || 30000);
   
   try {
-    const res = await fetch(url, {
+    const fullUrl = buildUrl(url);
+    const res = await fetch(fullUrl, {
       method,
       headers: {
         ...(data ? { "Content-Type": "application/json" } : {}),
@@ -146,6 +370,44 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior, context, timeout }) =>
   async ({ queryKey }) => {
+    // If Supabase is configured and the queryKey matches our common data endpoints, fetch via Supabase
+    if (supabase && typeof queryKey[0] === "string" && (queryKey[0] as string).startsWith("/api/")) {
+      const endpoint = queryKey[0] as string;
+      try {
+        if (endpoint === "/api/leads") {
+          const filters = (queryKey[1] as any) || {};
+          const q = buildLeadFilters(filters);
+          const { data, error } = await q;
+          if (error) throw new Error(error.message);
+          return (data || []).map(mapLeadRow) as any;
+        }
+        if (endpoint === "/api/team") {
+          const { data, error } = await supabase.from("users").select("*").order("created_at", { ascending: false });
+          if (error) throw new Error(error.message);
+          return (data || []).map(mapUserRow) as any;
+        }
+        if (endpoint === "/api/activities") {
+          const { data, error } = await supabase.from("activities").select("*").order("created_at", { ascending: false });
+          if (error) throw new Error(error.message);
+          return (data || []).map(mapActivityRow) as any;
+        }
+        if (endpoint === "/api/calls") {
+          const { data, error } = await supabase.from("calls").select("*").order("created_at", { ascending: false });
+          if (error) throw new Error(error.message);
+          return (data || []).map(mapCallRow) as any;
+        }
+        if (endpoint === "/api/scheduled-calls") {
+          const { data, error } = await supabase.from("scheduled_calls").select("*").order("scheduled_time", { ascending: true });
+          if (error) throw new Error(error.message);
+          return (data || []).map(mapScheduledCallRow) as any;
+        }
+        // Fallback: continue to network for endpoints we didn't map (e.g., auth, Twilio)
+      } catch (err) {
+        // Respect on401 behavior only for network; Supabase errors will be thrown
+        throw err;
+      }
+    }
+
     // Create an AbortController to handle timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
@@ -154,7 +416,10 @@ export const getQueryFn: <T>(options: {
     
     try {
       const url = queryKey[0] as string;
-      const res = await fetch(url, {
+      const isAbsolute = /^https?:\/\//i.test(url);
+      const base = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") || "";
+      const fullUrl = isAbsolute ? url : (base ? `${base}${url}` : url);
+      const res = await fetch(fullUrl, {
         credentials: "include",
         signal: controller.signal
       });

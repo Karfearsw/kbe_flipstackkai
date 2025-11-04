@@ -1,4 +1,5 @@
 import { useLocation, Link } from "wouter";
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import {
   LayoutDashboard,
@@ -39,32 +40,40 @@ interface SidebarProps {
 export function Sidebar({ open, onOpenChange }: SidebarProps) {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
+  const [openOps, setOpenOps] = useState(true);
+  const [openWork, setOpenWork] = useState(true);
+  const [openInsights, setOpenInsights] = useState(true);
   
   const handleLogout = () => {
     logoutMutation.mutate();
   };
   
-  const navItems = [
+  const opsItems = [
     { href: "/dashboard", icon: <LayoutDashboard className="mr-3 text-lg" />, label: "Dashboard" },
     { href: "/leads", icon: <UserSearch className="mr-3 text-lg" />, label: "Leads" },
     { href: "/calls", icon: <Phone className="mr-3 text-lg" />, label: "Calls" },
-    { href: "/team", icon: <Users className="mr-3 text-lg" />, label: "Team" },
     { href: "/map", icon: <Map className="mr-3 text-lg" />, label: "Property Map" },
+  ];
+  const workItems = [
+    { href: "/team", icon: <Users className="mr-3 text-lg" />, label: "Team" },
     { href: "/calculator", icon: <Calculator className="mr-3 text-lg" />, label: "Calculator" },
     { href: "/timesheet", icon: <Clock className="mr-3 text-lg" />, label: "Timesheet" },
+    { href: "/activities", icon: <Clock className="mr-3 text-lg" />, label: "Activities" },
+    { href: "/settings", icon: <Settings className="mr-3 text-lg" />, label: "Settings" },
+  ];
+  const insightItems = [
     { href: "/analytics", icon: <BarChart3 className="mr-3 text-lg" />, label: "Analytics" },
+    { href: "/status", icon: <BarChart3 className="mr-3 text-lg" />, label: "Status" },
     { href: "/documentation", icon: <FileText className="mr-3 text-lg" />, label: "Documentation" },
     { href: "/error-guidance", icon: <AlertTriangle className="mr-3 text-lg" />, label: "Error Guidance" },
     { href: "/error-examples", icon: <LifeBuoy className="mr-3 text-lg" />, label: "Error Examples" },
-    { href: "/settings", icon: <Settings className="mr-3 text-lg" />, label: "Settings" },
   ];
   
   return (
     <aside 
       className={cn(
         "sidebar w-64 bg-white dark:bg-neutral-900 shadow-md fixed inset-y-0 left-0 z-40 transform transition-transform duration-300",
-        // On mobile, show only when open. On md screens and up, always show
-        open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        open ? "translate-x-0" : "-translate-x-full"
       )}
     >
       <div className="h-full flex flex-col">
@@ -96,28 +105,105 @@ export function Sidebar({ open, onOpenChange }: SidebarProps) {
           </div>
         </div>
         
-        {/* Navigation Links */}
+        {/* Navigation Links - grouped with collapsible sections */}
         <nav className="flex-1 overflow-y-auto py-4 scroll-smooth custom-scrollbar">
-          <ul className="space-y-1 px-2">
-            {navItems.map((item) => (
-              <li key={item.href}>
-                <Link href={item.href}>
-                  <div 
-                    onClick={() => onOpenChange(false)}
-                    className={cn(
-                      "group flex items-center px-2 py-2 text-sm font-medium rounded-md cursor-pointer",
-                      location === item.href
-                        ? "bg-primary bg-opacity-10 text-primary"
-                        : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                    )}
-                  >
-                    {item.icon}
-                    <span className="truncate">{item.label}</span>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <div className="px-2 space-y-3">
+            {/* Operations */}
+            <button
+              className="w-full flex items-center justify-between px-2 py-2 text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
+              aria-expanded={openOps}
+              onClick={() => setOpenOps((v) => !v)}
+            >
+              <span>Operations</span>
+              <span className={cn("transform transition-transform duration-300", openOps ? "rotate-0" : "-rotate-90")}>▾</span>
+            </button>
+            <div className={cn("grid transition-all duration-300", openOps ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0")}> 
+              <ul className="overflow-hidden space-y-0.5 sm:space-y-1">
+                {opsItems.map((item) => (
+                  <li key={item.href}>
+                    <Link href={item.href}>
+                      <div
+                        onClick={() => onOpenChange(false)}
+                        className={cn(
+                          "group flex items-center px-3 py-2 md:py-2.5 text-sm font-medium rounded-md cursor-pointer",
+                          location === item.href
+                            ? "bg-primary/10 text-primary"
+                            : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                        )}
+                      >
+                        {item.icon}
+                        <span className="truncate">{item.label}</span>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Work */}
+            <button
+              className="w-full flex items-center justify-between px-2 py-2 text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
+              aria-expanded={openWork}
+              onClick={() => setOpenWork((v) => !v)}
+            >
+              <span>Work</span>
+              <span className={cn("transform transition-transform duration-300", openWork ? "rotate-0" : "-rotate-90")}>▾</span>
+            </button>
+            <div className={cn("grid transition-all duration-300", openWork ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0")}> 
+              <ul className="overflow-hidden space-y-0.5 sm:space-y-1">
+                {workItems.map((item) => (
+                  <li key={item.href}>
+                    <Link href={item.href}>
+                      <div
+                        onClick={() => onOpenChange(false)}
+                        className={cn(
+                          "group flex items-center px-3 py-2 md:py-2.5 text-sm font-medium rounded-md cursor-pointer",
+                          location === item.href
+                            ? "bg-primary/10 text-primary"
+                            : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                        )}
+                      >
+                        {item.icon}
+                        <span className="truncate">{item.label}</span>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Insights */}
+            <button
+              className="w-full flex items-center justify-between px-2 py-2 text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
+              aria-expanded={openInsights}
+              onClick={() => setOpenInsights((v) => !v)}
+            >
+              <span>Insights</span>
+              <span className={cn("transform transition-transform duration-300", openInsights ? "rotate-0" : "-rotate-90")}>▾</span>
+            </button>
+            <div className={cn("grid transition-all duration-300", openInsights ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0")}> 
+              <ul className="overflow-hidden space-y-0.5 sm:space-y-1">
+                {insightItems.map((item) => (
+                  <li key={item.href}>
+                    <Link href={item.href}>
+                      <div
+                        onClick={() => onOpenChange(false)}
+                        className={cn(
+                          "group flex items-center px-3 py-2 md:py-2.5 text-sm font-medium rounded-md cursor-pointer",
+                          location === item.href
+                            ? "bg-primary/10 text-primary"
+                            : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                        )}
+                      >
+                        {item.icon}
+                        <span className="truncate">{item.label}</span>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </nav>
         
         {/* Theme & Logout */}

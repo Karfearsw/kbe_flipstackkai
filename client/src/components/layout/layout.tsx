@@ -4,6 +4,9 @@ import { BottomNav } from "./bottom-nav";
 import { LiveTime } from "@/components/ui/live-time";
 import { ConnectionStatus } from "@/components/shared/connection-status";
 import { ActivityNotification } from "@/components/shared/activity-notification";
+import { Button } from "@/components/ui/button";
+import { PanelLeft } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -33,11 +36,24 @@ export function Layout({ children }: LayoutProps) {
       
       {/* Main content area using the utility classes */}
       <main className="main-content">
-        <div className="page-container">
+        <div className={cn("page-container", sidebarOpen ? "md:pl-64" : "md:pl-0")}>
           <div className="content-container">
             {/* Live time and connection status display at the top of every page */}
             <div className="mb-4 flex justify-between items-center">
-              <LiveTime />
+              <div className="flex items-center gap-3">
+                {/* Desktop menu toggle */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="hidden md:inline-flex"
+                  onClick={() => setSidebarOpen((v) => !v)}
+                  aria-label={sidebarOpen ? "Hide menu" : "Show menu"}
+                >
+                  <PanelLeft className="w-4 h-4 mr-2" />
+                  {sidebarOpen ? "Hide Menu" : "Show Menu"}
+                </Button>
+                <LiveTime />
+              </div>
               <div className="flex items-center gap-3">
                 <ActivityNotification />
                 <ConnectionStatus />
