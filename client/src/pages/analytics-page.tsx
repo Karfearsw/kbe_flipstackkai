@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { Sidebar } from "@/components/layout/sidebar";
-import { MobileNav } from "@/components/layout/mobile-nav";
 import { useQuery } from "@tanstack/react-query";
 import { Lead, Call, ScheduledCall } from "@shared/schema";
 import {
@@ -173,12 +171,9 @@ export default function AnalyticsPage() {
   };
 
   return (
-    <div className="flex h-screen bg-neutral-50">
-      <Sidebar open={true} onOpenChange={() => {}} />
-      
-      <main className="main-content flex-1 min-h-screen p-4 md:ml-64 md:p-6 overflow-auto pb-16">
+    <div className="space-y-4 md:space-y-6">
         {/* Page Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-2xl font-bold font-heading text-neutral-900">Analytics</h1>
             <p className="text-neutral-600">Insights and performance metrics for your real estate deals</p>
@@ -201,7 +196,7 @@ export default function AnalyticsPage() {
         </div>
         
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Total Leads</CardTitle>
@@ -252,7 +247,7 @@ export default function AnalyticsPage() {
         </div>
         
         {/* Tabs for different analytics sections */}
-        <Tabs defaultValue="leads" className="mb-4 md:mb-6">
+        <Tabs defaultValue="leads">
           <TabsList className="mb-2 md:mb-4">
             <TabsTrigger value="leads">Lead Analytics</TabsTrigger>
             <TabsTrigger value="deals">Deal Analytics</TabsTrigger>
@@ -642,9 +637,6 @@ export default function AnalyticsPage() {
             </Card>
           </TabsContent>
         </Tabs>
-      </main>
-      
-      <MobileNav />
     </div>
   );
 }
