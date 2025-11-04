@@ -37,22 +37,38 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-// Registration form schema
-const registerSchema = z.object({
-  name: z.string().min(2, {
-    message: "Name must be at least 2 characters long",
-  }),
-  username: z.string().min(3, {
-    message: "Username must be at least 3 characters long",
-  }),
-  email: z.string().email({
-    message: "Please enter a valid email address",
-  }),
-  password: z.string().min(6, {
-    message: "Password must be at least 6 characters long",
-  }),
-  role: z.enum(["admin", "acquisitions", "caller", "investor"]).default("caller"),
-});
+// Registration form schema (email or phone required)
+const registerSchema = z
+  .object({
+    name: z.string().min(2, {
+      message: "Name must be at least 2 characters long",
+    }),
+    username: z
+      .string()
+      .min(3, { message: "Username must be at least 3 characters long" })
+      .max(24, { message: "Username must be no more than 24 characters" })
+      .regex(/^[a-zA-Z0-9_]+$/, { message: "Use letters, numbers or underscores" }),
+    email: z
+      .string()
+      .email({ message: "Please enter a valid email address" })
+      .optional()
+      .or(z.literal("").transform(() => undefined)),
+    phone: z
+      .string()
+      .regex(/^\+[1-9]\d{7,14}$/, {
+        message: "Use E.164 format like +15551234567",
+      })
+      .optional()
+      .or(z.literal("").transform(() => undefined)),
+    password: z.string().min(6, {
+      message: "Password must be at least 6 characters long",
+    }),
+    role: z.enum(["admin", "acquisitions", "caller", "investor"]).default("caller"),
+  })
+  .refine((data) => !!data.email || !!data.phone, {
+    message: "Provide either email or phone",
+    path: ["email"],
+  });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
@@ -83,6 +99,7 @@ export default function AuthPage() {
       name: "",
       username: "",
       email: "",
+      phone: "",
       password: "",
       role: "caller",
     },
@@ -270,6 +287,19 @@ export default function AuthPage() {
                             <FormLabel>Email</FormLabel>
                             <FormControl>
                               <Input type="email" placeholder="john@example.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={registerForm.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Phone (optional)</FormLabel>
+                            <FormControl>
+                              <Input type="tel" placeholder="+15551234567" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

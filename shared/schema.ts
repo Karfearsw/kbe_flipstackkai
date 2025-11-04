@@ -6,8 +6,12 @@ import { z } from "zod";
 // Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
+  // Supabase Auth user id to link auth.users to public.users
+  authUserId: text("auth_user_id"),
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
+  // Optional phone; enforce uniqueness at DB level
+  phone: text("phone").unique(),
   password: text("password").notNull(),
   name: text("name"),
   role: text("role", { enum: ["admin", "acquisitions", "caller", "investor"] }).default("caller"),

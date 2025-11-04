@@ -36,6 +36,7 @@ function mapUserRow(row: any) {
     id: row.id,
     username: row.username,
     email: row.email,
+    phone: row.phone,
     password: row.password,
     name: row.name,
     role: row.role,
