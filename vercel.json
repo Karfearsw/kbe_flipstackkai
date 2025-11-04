@@ -1,0 +1,7 @@
+{
+  "builds": [{ "src": "package.json", "use": "@vercel/static-build" }],
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/public",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
